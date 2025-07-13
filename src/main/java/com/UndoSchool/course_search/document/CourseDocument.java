@@ -1,17 +1,18 @@
 package com.UndoSchool.course_search.document;
 
+import com.UndoSchool.course_search.dto.CompletionInput;
 import com.UndoSchool.course_search.enums.CourseType;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import lombok.Data;
 import org.springframework.data.annotation.Id;
-import org.springframework.data.elasticsearch.annotations.Document;
-import org.springframework.data.elasticsearch.annotations.DateFormat;
-import org.springframework.data.elasticsearch.annotations.Field;
-import org.springframework.data.elasticsearch.annotations.FieldType;
+import org.springframework.data.elasticsearch.annotations.*;
 
 import java.time.Instant;
 
+
 @Data
 @Document(indexName = "courses")
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class CourseDocument {
 
     @Id
@@ -43,4 +44,7 @@ public class CourseDocument {
 
     @Field(type = FieldType.Date, format = DateFormat.date_time)
     private Instant nextSessionDate;
+
+    private CompletionInput suggest;
+
 }

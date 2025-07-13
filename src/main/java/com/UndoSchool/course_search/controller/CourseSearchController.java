@@ -8,6 +8,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.http.ResponseEntity;
+
+import java.io.IOException;
 import java.time.Instant;
 
 import java.util.*;
@@ -33,7 +35,7 @@ public class CourseSearchController {
             @RequestParam(required = false, defaultValue = "upcoming") String sort,
             @RequestParam(required = false, defaultValue = "0") int page,
             @RequestParam(required = false, defaultValue = "10") int size
-    ) {
+    ) throws IOException {
         CourseSearchRequest request = new CourseSearchRequest();
         request.setKeyword(q);
         request.setMinAge(minAge);

@@ -3,3 +3,11 @@ spring:
     name: course-search
   elasticsearch:
     uris: http://localhost:9200
+
+logging:
+  level:
+    org.elasticsearch.client: DEBUG
+    co.elastic.clients: DEBUG
+    org.apache.http: DEBUG
+    org.elasticsearch.transport: DEBUG
+    com.UndoSchool.course_search: DEBUG  # <-- Log your own classes

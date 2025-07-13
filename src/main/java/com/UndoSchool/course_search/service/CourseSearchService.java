@@ -1,17 +1,21 @@
 package com.UndoSchool.course_search.service;
 
+import co.elastic.clients.elasticsearch.ElasticsearchClient;
+import co.elastic.clients.elasticsearch._types.SortOrder;
+import co.elastic.clients.elasticsearch._types.query_dsl.*;
+import co.elastic.clients.elasticsearch.core.SearchResponse;
+import co.elastic.clients.elasticsearch.core.search.Hit;
+import co.elastic.clients.json.JsonData;
 import com.UndoSchool.course_search.document.CourseDocument;
 import com.UndoSchool.course_search.dto.CourseSearchRequest;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.*;
-import org.springframework.data.elasticsearch.core.ElasticsearchOperations;
-import org.springframework.data.elasticsearch.core.SearchHit;
-import org.springframework.data.elasticsearch.core.SearchHits;
-import org.springframework.data.elasticsearch.core.query.Criteria;
-import org.springframework.data.elasticsearch.core.query.CriteriaQuery;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
+import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -19,64 +23,129 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class CourseSearchService {
 
-    private final ElasticsearchOperations elasticsearchTemplate;
+    private final ElasticsearchClient elasticsearchClient;
 
-    public Page<CourseDocument> searchCourses(CourseSearchRequest request) {
-        Criteria criteria = new Criteria();
+    public Page<CourseDocument> searchCourses(CourseSearchRequest request) throws IOException {
+        List<Query> must = new ArrayList<>();
+        List<Query> should = new ArrayList<>();
 
-        // Keyword search on title or description
+        // Keyword match: title or description
         if (StringUtils.hasText(request.getKeyword())) {
-            criteria = criteria.or(new Criteria("title").matches(request.getKeyword()))
-                    .or(new Criteria("description").matches(request.getKeyword()));
+            should.add(MatchQuery.of(m -> m
+                    .field("title")
+                    .query(request.getKeyword())
+            )._toQuery());
+
+            should.add(MatchQuery.of(m -> m
+                    .field("description")
+                    .query(request.getKeyword())
+            )._toQuery());
         }
 
-        // Exact filters
+        // Filters: category and type (exact match)
         if (StringUtils.hasText(request.getCategory())) {
-            criteria = criteria.and(new Criteria("category").is(request.getCategory()));
+            must.add(TermQuery.of(t -> t
+                    .field("category")
+                    .value(request.getCategory())
+            )._toQuery());
         }
+
         if (StringUtils.hasText(request.getType())) {
-            criteria = criteria.and(new Criteria("type").is(request.getType()));
+            must.add(TermQuery.of(t -> t
+                    .field("type")
+                    .value(request.getType())
+            )._toQuery());
         }
 
-        // Range filters
-        if (request.getMinAge() != null || request.getMaxAge() != null) {
-            Criteria ageCriteria = new Criteria("minAge");
-            if (request.getMinAge() != null) ageCriteria = ageCriteria.greaterThanEqual(request.getMinAge());
-            if (request.getMaxAge() != null) ageCriteria = ageCriteria.lessThanEqual(request.getMaxAge());
-            criteria = criteria.and(ageCriteria);
+        // Age filters
+        if (request.getMinAge() != null) {
+            must.add(RangeQuery.of(r -> r
+                    .field("minAge")
+                    .gte(JsonData.of(request.getMinAge()))
+            )._toQuery());
         }
 
-        if (request.getMinPrice() != null || request.getMaxPrice() != null) {
-            Criteria priceCriteria = new Criteria("price");
-            if (request.getMinPrice() != null) priceCriteria = priceCriteria.greaterThanEqual(request.getMinPrice());
-            if (request.getMaxPrice() != null) priceCriteria = priceCriteria.lessThanEqual(request.getMaxPrice());
-            criteria = criteria.and(priceCriteria);
+        if (request.getMaxAge() != null) {
+            must.add(RangeQuery.of(r -> r
+                    .field("minAge")
+                    .lte(JsonData.of(request.getMaxAge()))
+            )._toQuery());
         }
 
+        // Price filters
+        if (request.getMinPrice() != null) {
+            must.add(RangeQuery.of(r -> r
+                    .field("price")
+                    .gte(JsonData.of(request.getMinPrice()))
+            )._toQuery());
+        }
+
+        if (request.getMaxPrice() != null) {
+            must.add(RangeQuery.of(r -> r
+                    .field("price")
+                    .lte(JsonData.of(request.getMaxPrice()))
+            )._toQuery());
+        }
+
+        // Date filter
         if (request.getStartDate() != null) {
-            criteria = criteria.and(new Criteria("nextSessionDate").greaterThanEqual(request.getStartDate()));
+            long startDateMillis = request.getStartDate().toEpochMilli();
+            System.out.println("Start date millis = " + startDateMillis);
+
+            must.add(RangeQuery.of(r -> r
+                    .field("nextSessionDate")
+                    .gte(JsonData.of(startDateMillis))
+            )._toQuery());
         }
+
+
+
+        // Final query construction
+        BoolQuery.Builder boolBuilder = new BoolQuery.Builder();
+        if (!must.isEmpty()) boolBuilder.must(must);
+        if (!should.isEmpty()) boolBuilder.should(should).minimumShouldMatch("1");
+
+        Query finalQuery = Query.of(q -> q.bool(boolBuilder.build()));
 
         // Sorting
-        Sort sort = Sort.by("nextSessionDate").ascending();
+        final String sortField;
+        final SortOrder sortOrder;
+
         if ("priceAsc".equalsIgnoreCase(request.getSort())) {
-            sort = Sort.by("price").ascending();
+            sortField = "price";
+            sortOrder = SortOrder.Asc;
         } else if ("priceDesc".equalsIgnoreCase(request.getSort())) {
-            sort = Sort.by("price").descending();
+            sortField = "price";
+            sortOrder = SortOrder.Desc;
+        } else {
+            sortField = "nextSessionDate";
+            sortOrder = SortOrder.Asc;
         }
 
-        // Pagination
-        Pageable pageable = PageRequest.of(request.getPage(), request.getSize());
+        // Elasticsearch search execution
+        SearchResponse<CourseDocument> response = elasticsearchClient.search(s -> s
+                        .index("courses")
+                        .from(request.getPage() * request.getSize())
+                        .size(request.getSize())
+                        .query(finalQuery)
+                        .sort(so -> so
+                                .field(f -> f
+                                        .field(sortField)
+                                        .order(sortOrder)
+                                )
+                        ),
+                CourseDocument.class
+        );
 
-        // Build query
-        CriteriaQuery query = new CriteriaQuery(criteria, pageable);
-        query.addSort(sort);
-
-        SearchHits<CourseDocument> hits = elasticsearchTemplate.search(query, CourseDocument.class);
-        List<CourseDocument> courses = hits.stream()
-                .map(SearchHit::getContent)
+        List<CourseDocument> content = response.hits().hits().stream()
+                .map(Hit::source)
                 .collect(Collectors.toList());
 
-        return new PageImpl<>(courses, pageable, hits.getTotalHits());
+        assert response.hits().total() != null;
+        return new PageImpl<>(
+                content,
+                org.springframework.data.domain.PageRequest.of(request.getPage(), request.getSize()),
+                response.hits().total().value()
+        );
     }
 }
