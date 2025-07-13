@@ -29,13 +29,19 @@ public class CourseSearchService {
         List<Query> must = new ArrayList<>();
         List<Query> should = new ArrayList<>();
 
-        // Keyword match
         if (StringUtils.hasText(request.getKeyword())) {
-            should.add(MatchQuery.of(m -> m.field("title").query(request.getKeyword()))._toQuery());
-            should.add(MatchQuery.of(m -> m.field("description").query(request.getKeyword()))._toQuery());
+            should.add(MatchQuery.of(m -> m
+                    .field("title")
+                    .query(request.getKeyword())
+                    .fuzziness("AUTO")
+            )._toQuery());
+
+            should.add(MatchQuery.of(m -> m
+                    .field("description")
+                    .query(request.getKeyword())
+            )._toQuery());
         }
 
-        // Filters
         if (StringUtils.hasText(request.getCategory())) {
             must.add(TermQuery.of(t -> t.field("category").value(request.getCategory()))._toQuery());
         }
@@ -67,14 +73,12 @@ public class CourseSearchService {
             )._toQuery());
         }
 
-        // Build final bool query
         BoolQuery.Builder boolBuilder = new BoolQuery.Builder();
         if (!must.isEmpty()) boolBuilder.must(must);
         if (!should.isEmpty()) boolBuilder.should(should).minimumShouldMatch("1");
 
         Query finalQuery = Query.of(q -> q.bool(boolBuilder.build()));
 
-        // Sorting
         final String sortField;
         final SortOrder sortOrder;
         if ("priceAsc".equalsIgnoreCase(request.getSort())) {
@@ -135,10 +139,9 @@ public class CourseSearchService {
                 .flatMap(suggestion -> suggestion.completion().options().stream())
                 .map(option -> {
                     CourseDocument doc = option.source();
-                    return doc != null ? doc.getTitle() : option.text(); // use _source.title
+                    return doc != null ? doc.getTitle() : option.text();
                 })
                 .distinct()
                 .toList();
     }
-
 }
