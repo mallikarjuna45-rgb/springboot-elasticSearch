@@ -70,4 +70,8 @@ public class CourseSearchController {
 
         return ResponseEntity.ok(response);
     }
+    @GetMapping("search/suggest")
+    public List<String> suggestCourseTitles(@RequestParam("q") String query) throws IOException {
+        return courseSearchService.suggestTitles(query);
+    }
 }

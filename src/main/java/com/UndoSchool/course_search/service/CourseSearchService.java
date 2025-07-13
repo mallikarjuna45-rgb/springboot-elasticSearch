@@ -29,78 +29,45 @@ public class CourseSearchService {
         List<Query> must = new ArrayList<>();
         List<Query> should = new ArrayList<>();
 
-        // Keyword match: title or description
+        // Keyword match
         if (StringUtils.hasText(request.getKeyword())) {
-            should.add(MatchQuery.of(m -> m
-                    .field("title")
-                    .query(request.getKeyword())
-            )._toQuery());
-
-            should.add(MatchQuery.of(m -> m
-                    .field("description")
-                    .query(request.getKeyword())
-            )._toQuery());
+            should.add(MatchQuery.of(m -> m.field("title").query(request.getKeyword()))._toQuery());
+            should.add(MatchQuery.of(m -> m.field("description").query(request.getKeyword()))._toQuery());
         }
 
-        // Filters: category and type (exact match)
+        // Filters
         if (StringUtils.hasText(request.getCategory())) {
-            must.add(TermQuery.of(t -> t
-                    .field("category")
-                    .value(request.getCategory())
-            )._toQuery());
+            must.add(TermQuery.of(t -> t.field("category").value(request.getCategory()))._toQuery());
         }
 
         if (StringUtils.hasText(request.getType())) {
-            must.add(TermQuery.of(t -> t
-                    .field("type")
-                    .value(request.getType())
-            )._toQuery());
+            must.add(TermQuery.of(t -> t.field("type").value(request.getType()))._toQuery());
         }
 
-        // Age filters
         if (request.getMinAge() != null) {
-            must.add(RangeQuery.of(r -> r
-                    .field("minAge")
-                    .gte(JsonData.of(request.getMinAge()))
-            )._toQuery());
+            must.add(RangeQuery.of(r -> r.field("minAge").gte(JsonData.of(request.getMinAge())))._toQuery());
         }
 
         if (request.getMaxAge() != null) {
-            must.add(RangeQuery.of(r -> r
-                    .field("minAge")
-                    .lte(JsonData.of(request.getMaxAge()))
-            )._toQuery());
+            must.add(RangeQuery.of(r -> r.field("minAge").lte(JsonData.of(request.getMaxAge())))._toQuery());
         }
 
-        // Price filters
         if (request.getMinPrice() != null) {
-            must.add(RangeQuery.of(r -> r
-                    .field("price")
-                    .gte(JsonData.of(request.getMinPrice()))
-            )._toQuery());
+            must.add(RangeQuery.of(r -> r.field("price").gte(JsonData.of(request.getMinPrice())))._toQuery());
         }
 
         if (request.getMaxPrice() != null) {
-            must.add(RangeQuery.of(r -> r
-                    .field("price")
-                    .lte(JsonData.of(request.getMaxPrice()))
-            )._toQuery());
+            must.add(RangeQuery.of(r -> r.field("price").lte(JsonData.of(request.getMaxPrice())))._toQuery());
         }
 
-        // Date filter
         if (request.getStartDate() != null) {
-            long startDateMillis = request.getStartDate().toEpochMilli();
-            System.out.println("Start date millis = " + startDateMillis);
-
             must.add(RangeQuery.of(r -> r
                     .field("nextSessionDate")
-                    .gte(JsonData.of(startDateMillis))
+                    .gte(JsonData.of(request.getStartDate().toEpochMilli()))
             )._toQuery());
         }
 
-
-
-        // Final query construction
+        // Build final bool query
         BoolQuery.Builder boolBuilder = new BoolQuery.Builder();
         if (!must.isEmpty()) boolBuilder.must(must);
         if (!should.isEmpty()) boolBuilder.should(should).minimumShouldMatch("1");
@@ -110,7 +77,6 @@ public class CourseSearchService {
         // Sorting
         final String sortField;
         final SortOrder sortOrder;
-
         if ("priceAsc".equalsIgnoreCase(request.getSort())) {
             sortField = "price";
             sortOrder = SortOrder.Asc;
@@ -122,7 +88,6 @@ public class CourseSearchService {
             sortOrder = SortOrder.Asc;
         }
 
-        // Elasticsearch search execution
         SearchResponse<CourseDocument> response = elasticsearchClient.search(s -> s
                         .index("courses")
                         .from(request.getPage() * request.getSize())
@@ -148,4 +113,32 @@ public class CourseSearchService {
                 response.hits().total().value()
         );
     }
+
+    public List<String> suggestTitles(String prefix) throws IOException {
+        var response = elasticsearchClient.search(s -> s
+                        .index("courses")
+                        .suggest(sg -> sg
+                                .suggesters("title-suggest", suggester -> suggester
+                                        .prefix(prefix)
+                                        .completion(c -> c
+                                                .field("suggest")
+                                                .skipDuplicates(false)
+                                                .size(10)
+                                        )
+                                )
+                        ),
+                CourseDocument.class
+        );
+
+        return response.suggest()
+                .get("title-suggest").stream()
+                .flatMap(suggestion -> suggestion.completion().options().stream())
+                .map(option -> {
+                    CourseDocument doc = option.source();
+                    return doc != null ? doc.getTitle() : option.text(); // use _source.title
+                })
+                .distinct()
+                .toList();
+    }
+
 }
