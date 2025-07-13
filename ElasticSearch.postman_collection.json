@@ -1,0 +1,361 @@
+{
+	"info": {
+		"_postman_id": "f0149f09-ff5e-4092-aac2-a6dd9f4d98c5",
+		"name": "ElasticSearch",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "40433565"
+	},
+	"item": [
+		{
+			"name": "key search",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:8080/api/search?q=physics",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"api",
+						"search"
+					],
+					"query": [
+						{
+							"key": "q",
+							"value": "physics"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "category",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:8080/api/search?category=Art",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"api",
+						"search"
+					],
+					"query": [
+						{
+							"key": "category",
+							"value": "Art"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "age range",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:8080/api/search?minAge=9&maxAge=12",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"api",
+						"search"
+					],
+					"query": [
+						{
+							"key": "minAge",
+							"value": "9"
+						},
+						{
+							"key": "maxAge",
+							"value": "12"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "price range",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:8080/api/search?minPrice=30&maxPrice=60",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"api",
+						"search"
+					],
+					"query": [
+						{
+							"key": "minPrice",
+							"value": "30"
+						},
+						{
+							"key": "maxPrice",
+							"value": "60"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "upcomiing",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:8080/api/search?startDate=2025-07-20T00:00:00Z",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"api",
+						"search"
+					],
+					"query": [
+						{
+							"key": "startDate",
+							"value": "2025-07-20T00:00:00Z"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "sort Price asc",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:8080/api/search?sort=priceAsc",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"api",
+						"search"
+					],
+					"query": [
+						{
+							"key": "sort",
+							"value": "priceAsc"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "sort Price desc",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:8080/api/search?q=java",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"api",
+						"search"
+					],
+					"query": [
+						{
+							"key": "q",
+							"value": "java"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "paginated results",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:8080/api/search?q=java",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"api",
+						"search"
+					],
+					"query": [
+						{
+							"key": "q",
+							"value": "java"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "paginated results Combined",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:8080/api/search?q=data&category=science&type=OFFLINE&minAge=16&maxAge=22&minPrice=1000&maxPrice=3000&startDate=2025-08-10T00:00:00Z&sort=priceDesc&page=0&size=10",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"api",
+						"search"
+					],
+					"query": [
+						{
+							"key": "q",
+							"value": "data"
+						},
+						{
+							"key": "category",
+							"value": "science"
+						},
+						{
+							"key": "type",
+							"value": "OFFLINE"
+						},
+						{
+							"key": "minAge",
+							"value": "16"
+						},
+						{
+							"key": "maxAge",
+							"value": "22"
+						},
+						{
+							"key": "minPrice",
+							"value": "1000"
+						},
+						{
+							"key": "maxPrice",
+							"value": "3000"
+						},
+						{
+							"key": "startDate",
+							"value": "2025-08-10T00:00:00Z"
+						},
+						{
+							"key": "sort",
+							"value": "priceDesc"
+						},
+						{
+							"key": "page",
+							"value": "0"
+						},
+						{
+							"key": "size",
+							"value": "10"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "combined",
+			"request": {
+				"method": "GET",
+				"header": []
+			},
+			"response": []
+		},
+		{
+			"name": "type",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:8080/api/search?type=CLUB",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"api",
+						"search"
+					],
+					"query": [
+						{
+							"key": "type",
+							"value": "CLUB"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "suggest",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:8080/api/search/suggest?q=phy",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"api",
+						"search",
+						"suggest"
+					],
+					"query": [
+						{
+							"key": "q",
+							"value": "phy"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "fuzzy",
+			"request": {
+				"method": "GET",
+				"header": []
+			},
+			"response": []
+		}
+	]
+}
